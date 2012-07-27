@@ -74,9 +74,6 @@ class now_playing_conf : public preferences_page_v3
  *
  */
 
-#define HTTP_NOW_PLAYING_PATTERN	"%album% || %artist% || %title% || %filename_ext%"
-#define HTTP_NOW_PLAYING_SEP		" || "
-
 static abort_callback_dummy dont_care;
 
 class now_playing_callback : public play_callback_static
@@ -97,37 +94,33 @@ class now_playing_callback : public play_callback_static
 		service_ptr_t<titleformat_object> script;
 		static_api_ptr_t<playback_control> pc;
 		static_api_ptr_t<playlist_manager> pm;
-		string8 metainfo, playlist;
-		
-		static_api_ptr_t<titleformat_compiler>()->compile_safe(script, HTTP_NOW_PLAYING_PATTERN);
-
-		// fill track info
-		pc->playback_format_title_ex(track, NULL, metainfo, script, NULL, play_control::display_level_titles);
-
-		// fill playlist name
-		pm->playlist_get_name(pm->get_playing_playlist(), playlist);
-		
-		post(metainfo, playlist);
-	}
-
-	void post(string8 meta, string8 list)
-	{
 		static_api_ptr_t<http_client> http;
 		http_request_post::ptr req;
+		string8 buf;
 
-		if (http->create_request("POST")->service_query_t(req))
-		{
-			req->add_post_data("m", meta);
-			req->add_post_data("l", list);
-			req->add_post_data("p", HTTP_NOW_PLAYING_PATTERN);
-			req->add_post_data("s", HTTP_NOW_PLAYING_SEP);
+		http->create_request("POST")->service_query_t(req);
 
-			try { 
-				req->run_ex(conf_url, dont_care);
-			} catch (exception) {
-				console::info("HTTP Now Playing: URL is invalid.");
-			}
-		}
+		static_api_ptr_t<titleformat_compiler>()->compile_safe(script, "%album%");
+		pc->playback_format_title_ex(track, NULL, buf, script, NULL, play_control::display_level_titles);
+		req->add_post_data("album", buf);
+
+		static_api_ptr_t<titleformat_compiler>()->compile_safe(script, "%artist%");
+		pc->playback_format_title_ex(track, NULL, buf, script, NULL, play_control::display_level_titles);
+		req->add_post_data("artist", buf);
+		
+		static_api_ptr_t<titleformat_compiler>()->compile_safe(script, "%title%");
+		pc->playback_format_title_ex(track, NULL, buf, script, NULL, play_control::display_level_titles);
+		req->add_post_data("title", buf);
+
+		static_api_ptr_t<titleformat_compiler>()->compile_safe(script, "%filename_ext%");
+		pc->playback_format_title_ex(track, NULL, buf, script, NULL, play_control::display_level_titles);
+		req->add_post_data("filename_ext", buf);
+
+		pm->playlist_get_name(pm->get_playing_playlist(), buf);
+		req->add_post_data("playlist", buf);
+
+		try { req->run_ex(conf_url, dont_care); } 
+		catch (exception) { console::info("HTTP Now Playing: URL is invalid."); }
 	}
 };
 
