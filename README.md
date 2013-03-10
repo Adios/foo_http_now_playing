@@ -8,7 +8,8 @@ URL must be set in **"configuration -> display -> HTTP Now Playing"**.
 Download
 ====
 [https://github.com/Adios/foo\_http\_now_playing/downloads](https://github.com/Adios/foo_http_now_playing/downloads)
-
+ 
+depends on _VC++ 2010 x86 redistributable_, which will be there if you had installed https://github.com/rdp/virtual-audio-capture-grabber-device before. 
 
 What server side got
 ====
